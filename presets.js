@@ -1,7 +1,7 @@
 'use strict';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),clone=o=>JSON.parse(JSON.stringify(o));
 const bankNames=['Prism','Hollow','Vocal','Metal','Saw → pulse','Sine → triangle','Maximus Saw2Square','Odd glass','Bowed spectrum','Reed choir','Sync folds','Organ drawbars'];
-const presetBanks=['01 / Classic & vintage','02 / Spectral keys','03 / Evolving atmospheres','04 / Bass & motion','05 / Layers & experiments'];
+const presetBanks=['01 / Classic & vintage','02 / Spectral keys','03 / Evolving atmospheres','04 / Bass & motion','05 / Layers & experiments','06 / Tribal & psy'];
 const sources=['LFO 1','LFO 2','LFO 3','LFO 4','Amp envelope','Filter envelope','Mod envelope 1','Mod envelope 2','Wave env 1','Wave env 2','Wave env 3','Velocity','Key track','Mod wheel','Aftertouch','Random','Pitch wheel','Expression','Breath','Sustain','Poly pressure','Note gate','Sequence step','Sequence velocity','LFO 1 unipolar','LFO 2 unipolar','LFO 3 unipolar','LFO 4 unipolar','Mod envelope 1 bipolar','Mod envelope 2 bipolar'];
 const destinations=['Wave 1','Wave 2','Wave 3','Pitch 1','Pitch 2','Pitch 3','Level 1','Level 2','Level 3','Cutoff','Resonance','Drive','Pan','Amplitude','FM 2 → 1','FM 3 → 1','FM 1 → 2','FM 3 → 2','FM 1 → 3','FM 2 → 3','Second cutoff','Second morph','Pulse width'];
 for(let o=1;o<=3;o++)for(let j=1;j<=6;j++)destinations.push(`Wave ${o} point ${j}`);
@@ -67,7 +67,84 @@ const families=[
 ['Fourfold prism','Split horizon','Bell and cloud','Low and high','Cross-mod choir','Glass machine','Stereo braid','FM weather','Split brass','Harmonic engine','Threefold chime','Organ and reed','Sub and shimmer','Moving intervals','Metallic ribbon','Resonant galaxy','Layered copper','Dual aperture','Slow machinery','Wide transmission']];
 const variations=[['Pure','Warm','Bright','Soft','Wide'],['Clear','Muted','Glass','Long','Wide'],['Still','Drifting','Open','Dark','Immense'],['Tight','Driven','Open','Short','Wide'],['Close','Orbit','Bright','Slow','Wide']];
 const factory=[];for(let b=0;b<5;b++)for(let f=0;f<20;f++)for(let v=0;v<5;v++){let i=b*100+f*5+v;factory.push([families[b][f]+(v?' · '+variations[b][v]:''),`${presetBanks[b].slice(5)} · ${variations[b][v]} variation`,null,b,f,v]);}
-function makeProgram(index){let state=baseState(),entry=factory[index],b=entry[3],f=entry[4],v=entry[5],p=state.parts[0];state.program=index;state.patch=entry[0];let tables=[[6,4,8,5,4,2,1,0,4,8,6,9,11,4,10,1,9,6,2,9],[0,7,5,3,1,7,5,10,2,4,3,0,9,3,8,7,1,7,5,0],[2,8,0,7,5,0,7,9,8,0,11,6,1,3,0,7,8,5,10,2],[5,4,1,6,3,5,10,9,4,2,4,6,1,10,4,3,2,1,6,0],[0,8,3,5,2,10,7,3,6,11,5,9,5,8,3,0,4,10,8,0]][b];p.osc[0].bank=tables[f];p.osc[1].bank=(tables[f]+(f%3)+1)%12;p.osc[2].bank=5;p.osc[0].pos=.08+(f%8)*.1+v*.025;p.osc[1].pos=.7-(f%5)*.1;p.osc[1].level=.2+(f%4)*.06;p.osc[1].fine=3+v*2;p.osc[2].level=.12;p.cutoff=1200+(f%7)*650;p.res=.5+(f%5)*.45;p.drive=1.2+v*.2;p.variation=.08+v*.035;p.drift=.06+v*.025;p.spread=.1+v*.12;p.fx.delay=.12+v*.045;p.fx.reverb=.16+v*.04;
+
+// ---- 06 / Tribal & psy: built from the CONTINUUM 00_Tribal_Psy_8LFO_Master reference step tables ----
+const TRIBAL_LFO={
+ bass:[0,10,10,10,0,10,10,10,0,10,10,10,0,10,10,10],
+ acid:[8,0,4,10,0,6,0,9,3,0,10,0,7,4,0,10],
+ tribal:[10,0,0,8,0,0,9,0,10,0,0,7,0,5,0,9],
+ tabla:[6,0,0,0,8,0,4,0,10,0,0,6,9,10,8,10],
+ swell:[1,1,2,2,3,4,5,6,6,7,8,8,9,9,10,10],
+ hijaz:[0,12,7,4,1,5,7,12,8,7,4,1,0,4,7,10],
+ gate:[10,0,10,10,0,10,0,10,10,0,10,0,10,10,0,10],
+ glitch:['R','R',0,'R','R',0,'R','R',0,'R','R',0,'R','R','R',10]};
+const tribalNames=['Tribal Psy · 8 LFO scenes','Tribal Psy · Melodic techno','Tribal Psy · Dark ritual','Tribal Psy · Hijaz lead'];
+const tribalScenes=['Full groove','LFO 1 · Psy bass gallop','LFO 2 · 303 acid squelch','LFO 3 · Afro-tribal euclidean','LFO 4 · Tabla ratchet','LFO 5 · Shamanic breath swell','LFO 6 · Hijaz arpeggio','LFO 7 · Trance gate chop','LFO 8 · Quantum glitch'];
+function tribalStep(on,notes,vel,cutoff=null,wave=null){return {notes,on,vel:clamp(vel,.05,1),cutoff,wave};}
+function tribalProgram(v){
+ const state=baseState(),root=40,E=v===1?.7:1; // E Phrygian dominant
+ const scale=[0,1,4,5,7,8,10];
+ state.program=500+v;state.patch=tribalNames[v];state.bpm=[138,124,132,138][v];state.gate=v===1?.55:.45;state.swing=v===1?.06:0;
+ const zero=p=>{p.mods.forEach(m=>m.amount=0);p.fixed.forEach(m=>m.amount=0);p.osc.forEach(o=>{o.wave.amount=0;o.vintage=0;});p.variation=.03;p.drift=.02;};
+ // Part 1: rolling psy bass (engine A wavetable -12, detuned pair, sine sub, LP24 180 Hz)
+ const b=state.parts[0];zero(b);b.enabled=true;b.level=.7;b.pan=0;
+ Object.assign(b.osc[0],{mode:'wavetable',bank:4,pos:.15,semi:-12,fine:0,level:.7});
+ Object.assign(b.osc[1],{mode:'wavetable',bank:4,pos:.18,semi:-12,fine:8,level:.4});
+ Object.assign(b.osc[2],{mode:'analog',analog:'sine',semi:-12,fine:0,level:.55});
+ Object.assign(b,{cutoff:v===2?150:v===1?240:180,res:1.25,drive:1.6,env:3.2,hp:20,svmode:'highpass',bassComp:.85,spread:.25});
+ b.envs[0]=env(.002,.45,.85,.045);b.envs[1]=env(.0005,.095,0,.04);b.mods[2]={src:'Velocity',dst:'Cutoff',amount:.2,via:'None'};
+ b.filterMotion.mode='envelope';b.effects=[{...effect('tape'),mix:.08},{...effect('room'),mix:.05}];
+ // Part 2: 303-style acid squelch (wave + cutoff motion from LFO 2)
+ const a=state.parts[1];zero(a);a.enabled=true;a.level=.85;a.pan=-.15;
+ Object.assign(a.osc[0],{mode:'wavetable',bank:4,pos:.15,semi:0,level:.75});a.osc[1].level=0;a.osc[2].level=0;
+ Object.assign(a,{cutoff:v===2?320:420,res:v===2?3.4:3,drive:2.4,env:3,hp:60,svmode:'highpass'});
+ a.envs[0]=env(.002,.25,.5,.06);a.envs[1]=env(.001,.18,0,.08);
+ Object.assign(a.filterMotion,{mode:'both',clock:'sync',beats:4,motionDepth:1.2,resAmount:.5,satAmount:.8,points:TRIBAL_LFO.acid.map(s=>s/10)});
+ a.effects=[{...effect('stereo delay'),mix:.18,time:.75,feedback:.38},{...effect('room'),mix:.08}];
+ // Part 3: tribal toms / wood (pitch-drop body + noise click)
+ const t=state.parts[2];zero(t);t.enabled=true;t.level=.7;t.pan=.2;
+ Object.assign(t.osc[0],{mode:'wavetable',bank:5,pos:.1,semi:0,level:.85});Object.assign(t.osc[1],{mode:'analog',analog:'white noise',semi:0,level:0});t.osc[2].level=0;
+ Object.assign(t,{cutoff:3200,res:.4,env:1.5,hp:70,svmode:'highpass',drive:1.3});
+ t.envs[0]=env(.001,.22,0,.18);t.envs[1]=env(.001,.12,0,.1);t.envs[2]=env(.001,.07,0,.05);
+ t.mods[0]={src:'Mod envelope 1',dst:'Pitch 1',amount:1,via:'None'};t.mods[1]={src:'Mod envelope 1',dst:'Level 2',amount:.5,via:'None'};
+ t.effects=[{...effect('room'),mix:.18},{...effect('bypass')}];
+ // Part 4: Hijaz lead (reed + vocal tables, HP 180 Hz)
+ const l=state.parts[3];zero(l);l.enabled=true;l.level=.9;l.pan=.1;
+ Object.assign(l.osc[0],{mode:'wavetable',bank:9,pos:.35,semi:0,level:.6});Object.assign(l.osc[1],{mode:'wavetable',bank:2,pos:.5,semi:0,fine:7,level:.3});l.osc[2].level=0;
+ Object.assign(l,{cutoff:v===2?1600:2400,res:1.1,env:1.6,hp:180,svmode:'highpass',drive:1.3});
+ l.envs[0]=env(.005,.3,.6,v===1?.4:.22);l.envs[1]=env(.004,.4,.2,.3);l.mods[1]={src:'LFO 2',dst:'Pan',amount:.3,via:'None'};
+ l.effects=[{...effect('stereo delay'),mix:.28,time:.75,feedback:.42},{...effect('hall'),mix:v===2?.42:.3}];
+ // Step builders from the LFO tables
+ const off=()=>Array.from({length:16},()=>tribalStep(false,[root],.7));
+ const bassTrack=(sparse=false)=>TRIBAL_LFO.bass.map((s,i)=>tribalStep(s>0&&(!sparse||i%2===1),[i===14?root+1:root],i%4===1?.95:.78));
+ const acidNotes=[root,0,root+12,root,0,root+4,0,root+7,root,0,root+13,0,root,root+8,0,root+12];
+ const acidTrack=()=>TRIBAL_LFO.acid.map((s,i)=>tribalStep(s>0,[acidNotes[i]],.45+.55*s/10,null,clamp(.15+.7*s/10,0,1)));
+ const tomFor=s=>s>=10?root:s>=9?root+7:s>=8?root+5:s>=7?root+12:root+15;
+ const tribalTrack=(light=false)=>TRIBAL_LFO.tribal.map((s,i)=>tribalStep(s>0&&(!light||s===10),[tomFor(s)],.4+.6*s/10));
+ const tablaTrack=()=>TRIBAL_LFO.tabla.map((s,i)=>tribalStep(s>0,[i>=12?root+19:i%8===0?root+7:root+12],.4+.6*s/10));
+ const lead=24;
+ const hijazTrack=(gated=false)=>TRIBAL_LFO.hijaz.map((n,i)=>tribalStep(!gated||TRIBAL_LFO.gate[i]>0,[root+lead+n],i%4===0?.9:.72));
+ const swellTrack=()=>TRIBAL_LFO.swell.map((s,i)=>tribalStep(true,[root+lead+(i%4<2?0:7)],(.2+.8*s/10)*E));
+ const gateTrack=()=>TRIBAL_LFO.gate.map(s=>tribalStep(s>0,[root+lead,root+lead+4,root+lead+7],.8));
+ let seed=1234567+v;const rnd=()=>{seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;seed>>>=0;return seed/4294967296;};
+ const glitchTrack=()=>TRIBAL_LFO.glitch.map(s=>{if(s===0)return tribalStep(false,[root],.5);if(s===10)return tribalStep(true,[root+12],1,null,1);const n=root+scale[Math.floor(rnd()*7)]+12*Math.floor(rnd()*2);return tribalStep(rnd()>.25,[n],.45+rnd()*.5,null,rnd());});
+ const scene=(name,tracks)=>({name,bars:1,division:4,parts:tracks.map(tr=>tr||off())});
+ const scenes=[
+  scene(tribalScenes[0],[bassTrack(),acidTrack(),tribalTrack(),hijazTrack(true)]),
+  scene(tribalScenes[1],[bassTrack(),null,tribalTrack(true),null]),
+  scene(tribalScenes[2],[bassTrack(),acidTrack(),null,null]),
+  scene(tribalScenes[3],[bassTrack(),null,tribalTrack(),null]),
+  scene(tribalScenes[4],[bassTrack(),null,tablaTrack(),null]),
+  scene(tribalScenes[5],[bassTrack(true),null,null,swellTrack()]),
+  scene(tribalScenes[6],[bassTrack(),null,tribalTrack(true),hijazTrack()]),
+  scene(tribalScenes[7],[bassTrack(),acidTrack(),null,gateTrack()]),
+  scene(tribalScenes[8],[bassTrack(),glitchTrack(),tribalTrack(),null])];
+ state.patterns=state.patterns.map((p,i)=>i<scenes.length?scenes[i]:{...newPattern(i),parts:[0,1,2,3].map(()=>off())});
+ state.song=[1,1,3,3,2,2,0,0,4,6,6,7,7,0,0,5,8,0];state.songMode=false;state.pattern=v===3?6:0;
+ return state;}
+
+for(let v=0;v<tribalNames.length;v++)factory.push([tribalNames[v],'Tribal & psy · 8-LFO step scenes',null,5,0,v]);
+function makeProgram(index){if(index>=500)return tribalProgram(index-500);let state=baseState(),entry=factory[index],b=entry[3],f=entry[4],v=entry[5],p=state.parts[0];state.program=index;state.patch=entry[0];let tables=[[6,4,8,5,4,2,1,0,4,8,6,9,11,4,10,1,9,6,2,9],[0,7,5,3,1,7,5,10,2,4,3,0,9,3,8,7,1,7,5,0],[2,8,0,7,5,0,7,9,8,0,11,6,1,3,0,7,8,5,10,2],[5,4,1,6,3,5,10,9,4,2,4,6,1,10,4,3,2,1,6,0],[0,8,3,5,2,10,7,3,6,11,5,9,5,8,3,0,4,10,8,0]][b];p.osc[0].bank=tables[f];p.osc[1].bank=(tables[f]+(f%3)+1)%12;p.osc[2].bank=5;p.osc[0].pos=.08+(f%8)*.1+v*.025;p.osc[1].pos=.7-(f%5)*.1;p.osc[1].level=.2+(f%4)*.06;p.osc[1].fine=3+v*2;p.osc[2].level=.12;p.cutoff=1200+(f%7)*650;p.res=.5+(f%5)*.45;p.drive=1.2+v*.2;p.variation=.08+v*.035;p.drift=.06+v*.025;p.spread=.1+v*.12;p.fx.delay=.12+v*.045;p.fx.reverb=.16+v*.04;
 if(b===0){p.osc.forEach(o=>o.vintage=.25+v*.12);p.envs[0]=env(.01,.4,.65,.45);p.envs[1]=env(.02,.7,.35,.5);p.env=1.2;p.osc[0].wave.amount=.08;if(f%4===1){p.envs[0]=env(.005,.22,.18,.18);p.cutoff=700;p.env=3;p.osc[0].semi=-12;}if([2,9,13,17,18].includes(f)){p.envs[0]=env(.4,1,.8,2.5);p.cutoff=2200;}if(f===3){p.fm[0][1]=1.7;p.osc[1].semi=19;p.envs[0]=env(.003,1.5,.03,1.5);p.cutoff=7000;}if(f===4){p.osc[1].semi=7;p.envs[0]=env(.004,.28,.1,.35);p.env=3;p.cutoff=900;}if(f===5){p.osc[1].bank=2;p.envs[0]=env(.7,1,.7,3);}if(f===8){p.osc[0].bank=4;p.osc[0].pos=0;p.osc[0].vintage=0;p.osc[1].level=p.osc[2].level=0;p.osc.forEach(o=>o.wave.amount=0);p.mods.forEach(m=>m.amount=0);p.env=0;p.cutoff=16000;}if(f===0){p.envs[0]=env(.45,.6,.6,2.8);p.osc[0].bank=0;p.osc[1].bank=2;}if(f===7){state.parts[1]=clone(p);state.parts[1].enabled=true;state.parts[1].osc[0].semi=7;state.parts[1].pan=.4;state.parts[1].level=.35;}}
 if(b===1){p.envs[0]=env(.003,.5+(f%5)*.25,.04,.6+v*.2);p.envs[1]=env(.003,.3,.1,.4);p.env=2;p.cutoff=1800+(f%8)*650;p.osc[2].semi=12;p.osc[2].level=.08;p.osc[1].semi=[0,12,19,7,24][f%5];p.fm[0][1]=[0,.4,1.5,2.4,.7][f%5]+v*.08;p.osc.forEach(o=>{o.wave.loop=false;o.wave.amount=.15;o.wave.times=[.01,.08,.2,.4,.6,1];});p.mods[3]={src:'Mod envelope 1',dst:'FM 2 → 1',amount:.3,via:'Velocity'};p.envs[2]=env(.001,.5,0,.2);}
 if(b===2){p.envs[0]=env(.7+(f%5)*.3,2,.8,3+v*.5);p.envs[1]=env(1.5,2,.6,3);p.env=.8;p.cutoff=1300+(f%6)*600;p.osc[2].semi=[-12,7,12,0][f%4];p.osc[2].level=.25;p.fx.reverb=.4+v*.05;p.fx.chorus=.3;p.lfos.forEach((l,i)=>l.rate=.025+(f%5)*.02+i*.013);p.osc.forEach((o,i)=>{o.wave.amount=.25+v*.03;o.wave.times=o.wave.times.map(t=>t*(2+i));});p.mods[3]={src:'LFO 3',dst:'Wave 2',amount:.22,via:'None'};p.mods[4]={src:'LFO 4',dst:'Wave 3',amount:-.15,via:'None'};}
