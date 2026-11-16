@@ -12,4 +12,28 @@
 .motion-panel{grid-template-columns:1fr}.motion-options,.motion-groups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.motion-groups{grid-template-columns:repeat(2,minmax(0,1fr))}.motion-groups .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr))}.motion-lane{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:4px}.motion-lane label{display:grid;gap:5px;text-align:center;padding:6px 2px;border-top:2px solid var(--line)}.motion-lane .current{border-color:var(--accent);color:var(--accent)}.motion-lane input{width:100%;min-width:0}.motion-lane output{font-size:10px}@media(max-width:800px){.motion-groups,.motion-options{grid-template-columns:1fr}.motion-lane{grid-template-columns:repeat(8,minmax(0,1fr))}}
 
 .page{position:relative;isolation:isolate}.route-wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;fill:none;stroke-width:1.6;opacity:.78}.control,.route-panel{position:relative;z-index:2}.dial{background:var(--panel)}.route-tools[hidden],.route-dot[hidden]{display:none}.route-editor,.route-row-detail{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:10px 0}.route-editor label{display:grid;gap:4px}.route-editor select{margin:0}.route-dot{display:block;position:absolute;inset:0;pointer-events:none}.route-dot:after{content:'';position:absolute;top:1px;left:calc(50% - 2.5px);width:5px;height:5px;border-radius:50%;background:#78efd5}.route-panel{margin:10px 0}.route-row-detail{align-items:center}
+
+/* ===== Tidy pass: compact shell ===== */
+.head{padding:12px 0 10px}
+.head>div:first-child{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-size:22px;letter-spacing:.3em}
+.identity .tiny{display:none}
+.top{padding:8px 0 0}
+.transport{gap:6px}
+.transport label{display:inline-flex;align-items:center;gap:6px}
+.transport button,.transport select,.transport input[type=number],.partbar .part,.keyboard-meta button{height:30px;padding:0 11px;display:inline-flex;align-items:center}
+.transport select{min-width:0}
+.transport #bank{width:170px}.transport #preset{width:230px;max-width:none}
+#voicebudget{width:62px}
+.nav{gap:0;padding-top:6px;margin-top:2px}
+.nav button{flex:0 0 auto;background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 13px;color:var(--muted);font-size:10px;letter-spacing:.05em}
+.nav button:hover{color:var(--text);background:transparent;border-bottom-color:#5a6270}
+.nav button.active{background:transparent;color:var(--gold);border-bottom-color:var(--gold)}
+.partbar{margin:10px 0 6px;gap:6px}
+.partbar .part{min-width:0}
+iframe{min-height:300px}
+.keyboard-wrap{padding:8px 0 10px}
+.keyboard-meta{margin-bottom:6px}
+.keys{height:84px}.key{padding-top:60px}.key.black{padding-top:28px}
+.status{padding:8px 0 12px}
 </style></head><body><main class="shell"><header class="head"><div><div class="brand">CONTINUUM / INSTRUMENTS</div><h1>SOMA</h1><div class="tag">EVOLVING WAVETABLE SYNTHESIS</div></div><div class="identity"><span class="badge">DSP EDITION · 02</span><p class="muted tiny" style="margin-top:9px">THREE OSCILLATORS / FOUR PARTS / ONE CLOCK</p></div></header><section class="top" aria-label="Persistent instrument controls"><div class="transport"><button id="power" class="primary">Enable audio</button><button id="play">▶ Start sequence</button><label>BPM <input id="bpm" type="number" min="30" max="240" value="108"></label><select id="bank" aria-label="Preset bank"></select><select id="preset" aria-label="Factory preset"></select><button id="panic" class="danger">Panic</button><span class="spacer"></span><label style="width:100px">OUTPUT <input id="volume" type="range" min="0" max="1" step=".01" value=".55"></label><label>VOICES <select id="voicebudget" aria-label="Voice limit"><option>8</option><option selected>12</option><option>16</option><option>24</option></select></label><span class="mono muted" id="voices">00 / 12</span></div><nav class="nav" aria-label="Soma pages"></nav></section><div class="partbar"><span class="tiny muted">EDIT PART</span><span id="parts"></span><label><input id="parton" type="checkbox"> Sound enabled</label><span class="spacer"></span><span class="tiny muted" id="patchname">01 · Glass estuary</span></div><iframe id="page" title="Soma Performance" src="about:blank"></iframe><section class="keyboard-wrap"><div class="keyboard-meta"><span class="tiny muted">PLAY / KEYS A W S E D F T G Y H U J K</span><span class="spacer"></span><button id="octdown" aria-label="Octave down">−</button><span id="octave" class="mono">C3 — C5</span><button id="octup" aria-label="Octave up">+</button><button id="midi">Connect MIDI</button></div><div class="keys" id="keys" aria-label="Playable keyboard"></div></section><footer class="status"><span id="status" role="status">Ready. Enable audio, then play the keyboard or start the sequence.</span><span>CONTINUUM · SOMA</span></footer></main><script src="presets.js"></script><script src="fallback.js"></script><script src="engine.js"></script><script src="pages.js"></script><script src="shell.js"></script></body></html>
